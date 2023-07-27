@@ -1,13 +1,23 @@
-import torch
-import time
-import pprint
 import os
-import click
-from snake_simulator import SnakeGame, BoardElements, Direction, SnakeState
-from snake_dnn import DQN
+import pprint
+import sys
+import time
 
+import click
+import rich
+import torch
+from rich.console import Console
+
+from snake_dnn import DQN
+from snake_simulator import BoardElements, Direction, SnakeGame, SnakeState
+
+
+def set_cursor_position(x, y):
+    sys.stdout.write(f"\033[{y};{x}H")
 
 def play_game(net, device, board_width, board_height, frame_delay=0.1, step=False):
+    console = Console()
+    console.clear()
     game = SnakeGame(board_width=board_width, board_height=board_height)
     total_reward = 0.0
     # bootsrap while loop
@@ -16,8 +26,9 @@ def play_game(net, device, board_width, board_height, frame_delay=0.1, step=Fals
     snake_state, reward, terminal = game.next_move_onehot(y_pred.tolist())
     while (not terminal):
         total_reward += reward
-        clear_command = 'cls' if os.name == 'nt' else 'clear'
-        _ = os.system(clear_command)
+        set_cursor_position(0, 0)
+        # clear_command = 'cls' if os.name == 'nt' else 'clear'
+        # _ = os.system(clear_command)
 
         game.print_board()
         pprint.pprint(game.get_snake_state(debug=True))
@@ -29,7 +40,7 @@ def play_game(net, device, board_width, board_height, frame_delay=0.1, step=Fals
         if step:
             input()
 
-        time.sleep(frame_delay) 
+        time.sleep(frame_delay)
         snake_state, reward, terminal = game.next_move_onehot(y_pred.tolist())
 
     game.print_board()
@@ -40,13 +51,13 @@ def play_game(net, device, board_width, board_height, frame_delay=0.1, step=Fals
 @click.command()
 @click.option('--height', required=True, default=10, help='board height in rows, default=10')
 @click.option('--width', required=True, default=30, help='board width in columns, default=30')
-@click.option('--frame_delay', required=True, default=0.1, help='delay (in seconds) between game frames, default=0.100')
+@click.option('--frame_delay', required=True, default=0.08, help='delay (in seconds) between game frames, default=0.100')
 def main(
     width: int,
     height: int,
     frame_delay: int,
 ):
-    # gpu or cpu 
+    # gpu or cpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # load the current checkpoint

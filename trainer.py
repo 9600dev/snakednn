@@ -1,28 +1,26 @@
-import torch
-import torch.nn as nn
-import torchvision.transforms as transforms
-import torch.optim as optim
-import torch.nn.functional as F
-import numpy as np
-import os
-import time
+import collections
 import math
+import os
 import pprint
 import random
-import collections
+import time
 from collections import namedtuple
 from itertools import count
-from torch.autograd import Variable
 
-# import the snake game simulator
-from snake_simulator import SnakeGame, BoardElements, Direction, SnakeState
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision.transforms as transforms
+from torch.autograd import Variable
 
 # import play_game from our inference file
 from inference import play_game
-
 # import the pytorch NN for snake
 from snake_dnn import DQN
-
+# import the snake game simulator
+from snake_simulator import BoardElements, Direction, SnakeGame, SnakeState
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -174,7 +172,9 @@ def train():
                 next_state = None
 
             # Store the transition in memory
-            memory.push(torch.tensor(state, requires_grad=True, device=device), action, next_state, reward)
+            if state is not None:
+                memory.push(state.clone().detach().requires_grad_(True), action, next_state, reward)
+            # memory.push(torch.tensor(state, requires_grad=True, device=device), action, next_state, reward)
 
             # Move to the next state
             state = next_state
@@ -213,5 +213,7 @@ def train():
             torch.save(policy_net, 'training_state.pt')
 
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
+    import warnings
+    warnings.filterwarnings("ignore", category=UserWarning)
     train()
